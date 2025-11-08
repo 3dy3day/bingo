@@ -29,6 +29,7 @@
             max-width: 600px;
             width: 100%;
             margin-bottom: 20px;
+            position: relative;
         }
 
         h1 {
@@ -166,13 +167,194 @@
             font-style: italic;
             padding: 20px;
         }
+
+        .settings-button {
+            background: white;
+            color: var(--theme-color, #FF462D);
+            border: 2px solid var(--theme-color, #FF462D);
+            padding: 10px 20px;
+            font-size: 1.2em;
+            border-radius: 50%;
+            cursor: pointer;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .settings-button:hover {
+            background: var(--theme-color, #FF462D);
+            color: white;
+            transform: rotate(90deg);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .settings-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .settings-container.show {
+            display: flex;
+            opacity: 1;
+        }
+
+        .settings-content {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+
+        .settings-container.show .settings-content {
+            transform: scale(1);
+        }
+
+        .settings-title {
+            color: var(--theme-color, #FF462D);
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+
+        .setting-group {
+            margin-bottom: 25px;
+        }
+
+        .setting-group label {
+            display: block;
+            color: #333;
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .setting-group input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+
+        .setting-group input[type="number"]:focus {
+            outline: none;
+            border-color: var(--theme-color, #FF462D);
+        }
+
+        .color-picker-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .color-picker-wrapper input[type="color"] {
+            width: 80px;
+            height: 50px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .color-picker-wrapper span {
+            font-family: monospace;
+            font-size: 1.1em;
+            color: #666;
+        }
+
+        .settings-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 35px;
+        }
+
+        .save-button,
+        .cancel-button {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .save-button {
+            background: var(--theme-color, #FF462D);
+            color: white;
+        }
+
+        .save-button:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+
+        .cancel-button {
+            background: #f0f0f0;
+            color: #666;
+        }
+
+        .cancel-button:hover {
+            background: #e0e0e0;
+        }
     </style>
 </head>
 <body>
     <div class="container">
+        <button class="settings-button" onclick="toggleSettings()">⚙</button>
         <h1>BINGO</h1>
         <div class="number-display" id="numberDisplay">?</div>
         <button class="button" onclick="drawNumber()">Draw Number</button>
+    </div>
+
+    <div class="settings-container" id="settingsContainer">
+        <div class="settings-content">
+            <h2 class="settings-title">Settings</h2>
+
+            <div class="setting-group">
+                <label for="themeColor">Theme Color</label>
+                <div class="color-picker-wrapper">
+                    <input type="color" id="themeColor" value="#FF462D">
+                    <span id="colorValue">#FF462D</span>
+                </div>
+            </div>
+
+            <div class="setting-group">
+                <label for="minNumber">Minimum Number</label>
+                <input type="number" id="minNumber" value="0" min="0">
+            </div>
+
+            <div class="setting-group">
+                <label for="maxNumber">Maximum Number</label>
+                <input type="number" id="maxNumber" value="100" min="1">
+            </div>
+
+            <div class="settings-buttons">
+                <button class="save-button" onclick="saveSettings()">Save</button>
+                <button class="cancel-button" onclick="toggleSettings()">Cancel</button>
+            </div>
+        </div>
     </div>
 
     <div class="history-container">
@@ -188,9 +370,92 @@
     <script>
         let drawnNumbers = [];
         let availableNumbers = [];
+        let settings = {
+            themeColor: '#FF462D',
+            minNumber: 0,
+            maxNumber: 100
+        };
+
+        function loadSettings() {
+            const savedSettings = localStorage.getItem('bingoSettings');
+            if (savedSettings) {
+                settings = JSON.parse(savedSettings);
+            }
+            applyThemeColor(settings.themeColor);
+            updateSettingsUI();
+        }
+
+        function updateSettingsUI() {
+            document.getElementById('themeColor').value = settings.themeColor;
+            document.getElementById('colorValue').textContent = settings.themeColor;
+            document.getElementById('minNumber').value = settings.minNumber;
+            document.getElementById('maxNumber').value = settings.maxNumber;
+        }
+
+        function applyThemeColor(color) {
+            document.documentElement.style.setProperty('--theme-color', color);
+
+            const elements = [
+                'body',
+                '.number-display',
+                '.button',
+                '.history-number',
+                '.history-title'
+            ];
+
+            const style = document.createElement('style');
+            style.textContent = `
+                body {
+                    background: linear-gradient(135deg, ${color} 0%, ${adjustColor(color, 20)} 100%) !important;
+                }
+                .number-display {
+                    background: ${color} !important;
+                    box-shadow: 0 5px 20px ${color}33 !important;
+                }
+                .button {
+                    background: ${color} !important;
+                    box-shadow: 0 5px 15px ${color}33 !important;
+                }
+                .button:hover {
+                    background: ${adjustColor(color, -10)} !important;
+                    box-shadow: 0 7px 20px ${color}66 !important;
+                }
+                h1, .history-title {
+                    color: ${color} !important;
+                }
+                .history-number {
+                    background: ${color} !important;
+                    box-shadow: 0 2px 5px ${color}33 !important;
+                }
+                .reset-button {
+                    color: ${color} !important;
+                    border-color: ${color} !important;
+                }
+                .reset-button:hover {
+                    background: ${color} !important;
+                }
+            `;
+
+            const oldStyle = document.getElementById('dynamicTheme');
+            if (oldStyle) {
+                oldStyle.remove();
+            }
+            style.id = 'dynamicTheme';
+            document.head.appendChild(style);
+        }
+
+        function adjustColor(color, amount) {
+            const hex = color.replace('#', '');
+            const num = parseInt(hex, 16);
+            const r = Math.min(255, Math.max(0, (num >> 16) + amount));
+            const g = Math.min(255, Math.max(0, ((num >> 8) & 0x00FF) + amount));
+            const b = Math.min(255, Math.max(0, (num & 0x0000FF) + amount));
+            return '#' + ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0');
+        }
 
         function init() {
-            availableNumbers = Array.from({length: 101}, (_, i) => i);
+            const range = settings.maxNumber - settings.minNumber + 1;
+            availableNumbers = Array.from({length: range}, (_, i) => i + settings.minNumber);
             drawnNumbers = [];
             updateHistory();
         }
@@ -245,6 +510,48 @@
             }
         }
 
+        function toggleSettings() {
+            const container = document.getElementById('settingsContainer');
+            container.classList.toggle('show');
+            if (container.classList.contains('show')) {
+                updateSettingsUI();
+            }
+        }
+
+        function saveSettings() {
+            const themeColor = document.getElementById('themeColor').value;
+            const minNumber = parseInt(document.getElementById('minNumber').value);
+            const maxNumber = parseInt(document.getElementById('maxNumber').value);
+
+            if (minNumber >= maxNumber) {
+                alert('Minimum number must be less than maximum number!');
+                return;
+            }
+
+            if (minNumber < 0) {
+                alert('Minimum number must be 0 or greater!');
+                return;
+            }
+
+            settings.themeColor = themeColor;
+            settings.minNumber = minNumber;
+            settings.maxNumber = maxNumber;
+
+            localStorage.setItem('bingoSettings', JSON.stringify(settings));
+            applyThemeColor(themeColor);
+
+            init();
+            document.getElementById('numberDisplay').textContent = '?';
+
+            toggleSettings();
+            alert('Settings saved successfully!');
+        }
+
+        document.getElementById('themeColor').addEventListener('input', function(e) {
+            document.getElementById('colorValue').textContent = e.target.value;
+        });
+
+        loadSettings();
         init();
     </script>
 </body>
